@@ -2,9 +2,10 @@ mod generator;
 mod transaction;
 
 use generator::Generator;
-use std::thread;
 use std::time::Duration;
-fn main() {
+use tokio::time::sleep;
+#[tokio::main]
+async fn main() {
     println!("Blockchain Intelligence Platform");
 
     let mut generator = Generator::new();
@@ -14,6 +15,6 @@ fn main() {
         
         tx.summary();
 
-        thread::sleep(Duration::from_secs(1));
+        sleep(Duration::from_secs(1)).await;
     }
 }

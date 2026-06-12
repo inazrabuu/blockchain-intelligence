@@ -1,15 +1,19 @@
+mod generator;
 mod transaction;
 
-use transaction::Transaction;
+use generator::Generator;
+use std::thread;
+use std::time::Duration;
 fn main() {
     println!("Blockchain Intelligence Platform");
-    
-    let tx = Transaction::new(
-        String::from("tx_001"),
-        String::from("wallet_a"),
-        String::from("wallet_b"),
-        12.8
-    );
 
-    tx.summary();
+    let mut generator = Generator::new();
+
+    loop {
+        let tx = generator.generate();
+        
+        tx.summary();
+
+        thread::sleep(Duration::from_secs(1));
+    }
 }

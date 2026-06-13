@@ -16,17 +16,17 @@ async fn main() {
 
         loop {
             let trx = generator.generate();
-            
+            println!("Producing {}", trx.hash);            
             tx.send(trx).await.unwrap();
-
-            sleep(Duration::from_secs(1)).await;
         }
     });
 
     let consumer = tokio::spawn(async move {
         // consumer
         while let Some(transaction) = rx.recv().await {
-            transaction.summary()
+            println!("Consuming {}", transaction.hash);
+            transaction.summary();
+            sleep(Duration::from_secs(1)).await;
         }
     });
 

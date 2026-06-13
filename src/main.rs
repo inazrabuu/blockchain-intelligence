@@ -2,19 +2,33 @@ mod generator;
 mod transaction;
 
 use generator::Generator;
+use transaction::Transaction;
 use std::time::Duration;
 use tokio::time::sleep;
+use tokio::sync::mpsc;
 #[tokio::main]
 async fn main() {
-    println!("Blockchain Intelligence Platform");
+    let (tx, mut rx) = mpsc::channel::<Transaction>(100);
 
-    let mut generator = Generator::new();
+    let producer = tokio::spawn(async move {
+        // producer
+        let mut generator = Generator::new();
 
-    loop {
-        let tx = generator.generate();
-        
-        tx.summary();
+        loop {
+            let trx = generator.generate();
+            
+            tx.send(trx).await.unwrap();
 
-        sleep(Duration::from_secs(1)).await;
-    }
+            sleep(Duration::from_secs(1)).await;
+        }
+    });
+
+    let consumer = tokio::spawn(async move {
+        // consumer
+        while let Some(transaction) = rx.recv().await {
+            transaction.summary()
+        }
+    });
+
+    let _ = tokio::join!(producer, consumer);
 }

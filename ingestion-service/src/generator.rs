@@ -15,7 +15,7 @@ impl Generator {
         let timestamp = SystemTime::now()
                                     .duration_since(UNIX_EPOCH)
                                     .unwrap()
-                                    .as_secs() as i64;
+                                    .as_millis() as i64;
 
         Transaction::new(
             format!("tx_{:03}", self.counter),

@@ -1,4 +1,5 @@
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::{postgres::PgPoolOptions, PgPool, Row};
+use crate::transaction::Transaction;
 
 pub async fn connect(
   database_url: &str
@@ -7,4 +8,63 @@ pub async fn connect(
       .max_connections(5)
       .connect(database_url)
       .await
+}
+
+pub async fn get_transactions(
+  pool: &PgPool,
+) -> Result<Vec<Transaction>, sqlx::Error> {
+    let rows = sqlx::query(
+      r#"
+        SELECT hash, "from", "to", amount, timestamp 
+        FROM transactions
+        ORDER BY timestamp DESC 
+      "#
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let transactions = rows
+        .into_iter()
+        .map(|row| Transaction {
+          hash: row.get("hash"),
+          from: row.get("from"),
+          to: row.get("to"),
+          amount: row.get("amount"),
+          timestamp: row.get("timestamp")
+        })
+        .collect();
+
+    Ok(transactions)
+}
+
+pub async fn get_transaction_by_hash(
+    pool: &PgPool,
+    hash: &str,
+) -> Result<Option<Transaction>, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        SELECT
+            hash,
+            "from",
+            "to",
+            amount,
+            timestamp
+        FROM transactions
+        WHERE hash = $1
+        "#
+    )
+    .bind(hash)
+    .fetch_optional(pool)
+    .await?;
+
+    match row {
+        Some(row) => Ok(Some(Transaction {
+            hash: row.get("hash"),
+            from: row.get("from"),
+            to: row.get("to"),
+            amount: row.get("amount"),
+            timestamp: row.get("timestamp"),
+        })),
+        None => Ok(None),
+    }
 }

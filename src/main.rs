@@ -1,5 +1,6 @@
 mod generator;
 mod transaction;
+mod database;
 
 use generator::Generator;
 use transaction::Transaction;

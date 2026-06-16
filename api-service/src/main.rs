@@ -10,7 +10,8 @@ use axum::{
 };
 use serde::Serialize;
 use std::sync::Arc;
-use axum::extract::State;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
 
 #[derive(Clone)]
 struct AppState {
@@ -41,6 +42,25 @@ async fn get_transactions(
     Json(transactions)
 }
 
+async fn get_transaction_by_hash(
+    Path(hash): Path<String>,
+    State(state): State<std::sync::Arc<AppState>>,
+) -> Result<Json<Transaction>, StatusCode> {
+
+    let transaction =
+        database::get_transaction_by_hash(
+            &state.pool,
+            &hash,
+        )
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    match transaction {
+        Some(tx) => Ok(Json(tx)),
+        None => Err(StatusCode::NOT_FOUND),
+    }
+}
+
 #[tokio::main]
 async fn main() {
     dotenv().ok();
@@ -57,6 +77,7 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(health))
         .route("/transactions", get(get_transactions))
+        .route("/transaction/{hash}", get(get_transaction_by_hash))
         .with_state(state);
 
     let listener = 

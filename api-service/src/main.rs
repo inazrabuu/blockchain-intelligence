@@ -1,13 +1,21 @@
 mod database;
+mod transaction;
 
 use dotenvy::dotenv;
-
+use transaction::Transaction;
 use axum::{
     routing::get,
     Json,
     Router
 };
 use serde::Serialize;
+use std::sync::Arc;
+use axum::extract::State;
+
+#[derive(Clone)]
+struct AppState {
+    pool: sqlx::PgPool,
+}
 
 #[derive(Serialize)]
 struct HealthResponse {
@@ -22,6 +30,17 @@ async fn health() -> Json<HealthResponse> {
     )
 }
 
+async fn get_transactions(
+    State(state): State<Arc<AppState>>
+) -> Json<Vec<Transaction>> {
+    let transactions = 
+        database::get_transactions(&state.pool)
+        .await
+        .unwrap();
+
+    Json(transactions)
+}
+
 #[tokio::main]
 async fn main() {
     dotenv().ok();
@@ -33,8 +52,12 @@ async fn main() {
                 .expect("Failed to connect to PostgreSQL");
     println!("Connected to PostgreSQL!");
 
+    let state = Arc::new(AppState { pool });
+
     let app = Router::new()
-        .route("/health", get(health));
+        .route("/health", get(health))
+        .route("/transactions", get(get_transactions))
+        .with_state(state);
 
     let listener = 
         tokio::net::TcpListener::bind("0.0.0.0:3000")

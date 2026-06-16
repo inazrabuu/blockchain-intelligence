@@ -9,8 +9,9 @@ use axum::{
     Router
 };
 use serde::Serialize;
+use serde::Deserialize;
 use std::sync::Arc;
-use axum::extract::{Path, State};
+use axum::extract::{Path, State, Query};
 use axum::http::StatusCode;
 
 #[derive(Clone)]
@@ -23,6 +24,12 @@ struct HealthResponse {
     status: String
 }
 
+#[derive(Deserialize)]
+struct PaginationParams {
+    limit: Option<i64>,
+    offset: Option<i64>,
+}
+
 async fn health() -> Json<HealthResponse> {
     Json(
         HealthResponse {
@@ -32,10 +39,18 @@ async fn health() -> Json<HealthResponse> {
 }
 
 async fn get_transactions(
-    State(state): State<Arc<AppState>>
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<PaginationParams>
 ) -> Json<Vec<Transaction>> {
+    let limit = params.limit.unwrap_or(10);
+    let offset = params.offset.unwrap_or(0);
+
     let transactions = 
-        database::get_transactions(&state.pool)
+        database::get_transactions(
+            &state.pool,
+            limit,
+            offset
+        )
         .await
         .unwrap();
 

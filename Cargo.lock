@@ -603,6 +603,7 @@ dependencies = [
 name = "ingestion-service"
 version = "0.1.0"
 dependencies = [
+ "dotenvy",
  "sqlx",
 ]
 

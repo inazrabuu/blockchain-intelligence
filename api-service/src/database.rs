@@ -12,14 +12,19 @@ pub async fn connect(
 
 pub async fn get_transactions(
   pool: &PgPool,
+  limit: i64,
+  offset: i64,
 ) -> Result<Vec<Transaction>, sqlx::Error> {
     let rows = sqlx::query(
       r#"
         SELECT hash, "from", "to", amount, timestamp 
         FROM transactions
         ORDER BY timestamp DESC 
+        LIMIT $1 OFFSET $2
       "#
     )
+    .bind(limit)
+    .bind(offset)
     .fetch_all(pool)
     .await?;
 

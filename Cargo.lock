@@ -58,13 +58,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "blockchain-intelligence"
-version = "0.1.0"
-dependencies = [
- "tokio",
-]
-
-[[package]]
 name = "byteorder"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -218,7 +211,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -551,6 +544,7 @@ version = "0.1.0"
 dependencies = [
  "dotenvy",
  "sqlx",
+ "tokio",
 ]
 
 [[package]]

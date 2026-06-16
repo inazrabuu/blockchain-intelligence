@@ -1,12 +1,6 @@
-[package]
-name = "blockchain-intelligence"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-tokio = {version = "1", features = ["full"] }
-
 [workspace]
+resolver = "2"
+
 members = [
   "ingestion-service",
   "api-service",

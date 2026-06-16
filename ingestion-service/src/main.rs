@@ -16,7 +16,12 @@ async fn main() {
     let database_url = 
         std::env::var("DATABASE_URL")
         .expect("DATABASE_URL is not found");
-    println!("{}", &database_url);
+
+    let pool = 
+        database::connect(&database_url)
+        .await
+        .expect("Failed to connect to PostgreSQL");
+    println!("Database Postgre connected.");
 
     let (tx, mut rx) = mpsc::channel::<Transaction>(100);
 

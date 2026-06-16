@@ -7,8 +7,17 @@ use transaction::Transaction;
 use std::time::Duration;
 use tokio::time::sleep;
 use tokio::sync::mpsc;
+use dotenvy::dotenv;
+
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
+
+    let database_url = 
+        std::env::var("DATABASE_URL")
+        .expect("DATABASE_URL is not found");
+    println!("{}", &database_url);
+
     let (tx, mut rx) = mpsc::channel::<Transaction>(100);
 
     let producer = tokio::spawn(async move {

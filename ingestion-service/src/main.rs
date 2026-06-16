@@ -41,6 +41,11 @@ async fn main() {
         while let Some(transaction) = rx.recv().await {
             println!("Consuming {}", transaction.hash);
             transaction.summary();
+
+            if let Err(err) = database::insert_transaction(&pool, &transaction).await {
+                eprintln!("Insert failed: {}", err)
+            }
+
             sleep(Duration::from_secs(1)).await;
         }
     });

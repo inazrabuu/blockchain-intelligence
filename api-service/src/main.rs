@@ -1,8 +1,9 @@
 mod database;
-mod transaction;
+// mod transaction;
+
+use shared::transaction::Transaction;
 
 use dotenvy::dotenv;
-use transaction::Transaction;
 use axum::{
     routing::get,
     Json,

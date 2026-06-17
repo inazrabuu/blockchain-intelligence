@@ -1,5 +1,5 @@
 use sqlx::{postgres::PgPoolOptions, PgPool, Row};
-use crate::transaction::Transaction;
+use shared::transaction::Transaction;
 
 pub async fn connect(
   database_url: &str

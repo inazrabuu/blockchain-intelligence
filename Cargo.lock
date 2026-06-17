@@ -16,6 +16,7 @@ dependencies = [
  "dotenvy",
  "serde",
  "serde_json",
+ "shared",
  "sqlx",
  "tokio",
 ]

@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Transacion {
+pub struct Transaction {
     pub hash: String,
     pub from: String,
     pub to: String,

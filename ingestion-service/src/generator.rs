@@ -1,4 +1,4 @@
-use crate::transaction::Transaction;
+use shared::transaction::Transaction;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct Generator {

@@ -1,4 +1,4 @@
-use crate::transaction::Transaction;
+use shared::transaction::Transaction;
 use sqlx::{PgPool, postgres::PgPoolOptions};
 
 pub async fn connect(database_url: &str) -> Result<PgPool, sqlx::Error> {

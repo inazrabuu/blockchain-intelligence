@@ -689,6 +689,7 @@ name = "ingestion-service"
 version = "0.1.0"
 dependencies = [
  "dotenvy",
+ "shared",
  "sqlx",
  "tokio",
 ]
@@ -1192,6 +1193,9 @@ dependencies = [
 [[package]]
 name = "shared"
 version = "0.1.0"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "shlex"

@@ -1,9 +1,8 @@
 mod generator;
-mod transaction;
 mod database;
 
+use shared::transaction::Transaction;
 use generator::Generator;
-use transaction::Transaction;
 use std::time::Duration;
 use tokio::time::sleep;
 use tokio::sync::mpsc;
@@ -40,7 +39,7 @@ async fn main() {
         // consumer
         while let Some(transaction) = rx.recv().await {
             println!("Consuming {}", transaction.hash);
-            transaction.summary();
+            println!("{}", transaction.summary());
 
             if let Err(err) = database::insert_transaction(&pool, &transaction).await {
                 eprintln!("Insert failed: {}", err)

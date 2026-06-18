@@ -2,6 +2,7 @@ mod generator;
 mod database;
 
 use shared::transaction::Transaction;
+use shared::stream::StreamHub;
 use generator::Generator;
 use std::time::Duration;
 use tokio::time::sleep;
@@ -22,7 +23,11 @@ async fn main() {
         .expect("Failed to connect to PostgreSQL");
     println!("Database Postgre connected.");
 
-    let (tx, mut rx) = mpsc::channel::<Transaction>(100);
+    let (tx, mut rx) = 
+        mpsc::channel::<Transaction>(100);
+
+    let hub = StreamHub::new(1000);
+    let consumer_hub = hub.clone();
 
     let producer = tokio::spawn(async move {
         // producer
@@ -42,8 +47,12 @@ async fn main() {
             println!("{}", transaction.summary());
 
             if let Err(err) = database::insert_transaction(&pool, &transaction).await {
-                eprintln!("Insert failed: {}", err)
+                eprintln!("Insert failed: {}", err);
+                continue;
             }
+
+            consumer_hub.publish(transaction.clone());
+            println!("Published to stream: {}", transaction.hash);
 
             sleep(Duration::from_secs(1)).await;
         }

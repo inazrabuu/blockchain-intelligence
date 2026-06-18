@@ -1,10 +1,12 @@
 mod database;
 // mod transaction;
 
-use shared::transaction::Transaction;
+use shared::{stream::StreamHub, transaction::Transaction};
 
 use dotenvy::dotenv;
 use axum::{
+    extract::ws::{Message, WebSocket, WebSocketUpgrade},
+    response::IntoResponse,
     routing::get,
     Json,
     Router
@@ -18,6 +20,7 @@ use axum::http::StatusCode;
 #[derive(Clone)]
 struct AppState {
     pool: sqlx::PgPool,
+    hub: Arc<StreamHub>
 }
 
 #[derive(Serialize)]
@@ -77,6 +80,41 @@ async fn get_transaction_by_hash(
     }
 }
 
+async fn ws_handler(
+    ws: WebSocketUpgrade,
+    axum::extract::State(state): axum::extract::State<AppState>
+) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| handle_socket(socket, state))
+}
+
+async fn handle_socket(mut socket: WebSocket, state: AppState) {
+    let mut receiver = state.hub.subscribe();
+
+    loop {
+        tokio::select! {
+            msg = receiver.recv() => {
+                match msg {
+                    Ok(tx) => {
+                        let json = serde_json::to_string(&tx).unwrap();
+
+                        if socket.send(Message::Text(json.into())).await.is_err() {
+                            break;
+                        }
+                    }
+                    Err(_) => break,
+                }
+            }
+
+            result = socket.recv() => {
+                match result {
+                    Some(Ok(_)) => {},
+                    _ => break,
+                }
+            }
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() {
     dotenv().ok();
@@ -88,7 +126,9 @@ async fn main() {
                 .expect("Failed to connect to PostgreSQL");
     println!("Connected to PostgreSQL!");
 
-    let state = Arc::new(AppState { pool });
+    let hub = Arc::new(StreamHub::new(1000));
+
+    let state = Arc::new(AppState { pool, hub });
 
     let app = Router::new()
         .route("/health", get(health))

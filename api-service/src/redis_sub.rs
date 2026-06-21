@@ -24,7 +24,7 @@ pub async fn subscribe_transactions(
     while let Some(message) = stream.next().await {
         let payload: String = message.get_payload()?;
 
-        println!("Received: {}", "payload");
+        println!("Received: {}", payload);
     }
 
     Ok(())

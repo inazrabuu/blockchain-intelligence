@@ -14,7 +14,7 @@ pub async fn publish_transaction(
 
     println!("{}", payload);
     let _: () = conn
-        .publish("transaction_event", payload)
+        .publish("transaction_events", payload)
         .await?;
 
     Ok(())

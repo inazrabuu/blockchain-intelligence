@@ -50,6 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
         }
     });
 
+    let consumer_redis = redis_client.clone();
     let consumer = tokio::spawn(async move {
         // consumer
         while let Some(transaction) = rx.recv().await {
@@ -60,6 +61,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
                 eprintln!("Insert failed: {}", err);
                 continue;
             }
+
+            let payload = serde_json::to_string(&transaction)
+                .expect("serialize transaction");
+
+            if let Err(err) = redis_pub::publish_transaction(&consumer_redis, &payload).await {
+                eprintln!("Redis publish failed {}", err);
+            }
+            println!("published {} to Redis", transaction.hash);
 
             consumer_hub.publish(transaction.clone());
             println!("Published to stream: {}", transaction.hash);

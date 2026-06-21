@@ -727,6 +727,7 @@ version = "0.1.0"
 dependencies = [
  "dotenvy",
  "redis",
+ "serde_json",
  "shared",
  "sqlx",
  "tokio",

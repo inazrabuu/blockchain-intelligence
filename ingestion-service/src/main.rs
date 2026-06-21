@@ -1,5 +1,6 @@
 mod generator;
 mod database;
+mod redis_pub;
 
 use shared::transaction::Transaction;
 use shared::stream::StreamHub;

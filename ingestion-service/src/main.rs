@@ -11,7 +11,7 @@ use tokio::sync::mpsc;
 use dotenvy::dotenv;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>>{
     dotenv().ok();
 
     let database_url = 
@@ -23,6 +23,15 @@ async fn main() {
         .await
         .expect("Failed to connect to PostgreSQL");
     println!("Database Postgre connected.");
+
+    let redis_url = 
+        std::env::var("REDIS_URL")
+        .expect("REDIS_URL is not found");
+
+    let redis_client = 
+        redis_pub::connect(&redis_url)
+        .await?;
+    println!("{}", "Redis connected");
 
     let (tx, mut rx) = 
         mpsc::channel::<Transaction>(100);
@@ -60,4 +69,6 @@ async fn main() {
     });
 
     let _ = tokio::join!(producer, consumer);
+
+    Ok(())
 }

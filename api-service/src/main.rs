@@ -1,9 +1,11 @@
 mod database;
-// mod transaction;
+mod redis_sub;
 
-use shared::{stream::StreamHub, transaction::Transaction};
+use shared::transaction::Transaction;
+use tokio::sync::broadcast;
 
 use dotenvy::dotenv;
+use sqlx::error;
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     response::IntoResponse,
@@ -20,7 +22,7 @@ use axum::http::StatusCode;
 #[derive(Clone)]
 struct AppState {
     pool: sqlx::PgPool,
-    hub: Arc<StreamHub>
+    broadcaster: broadcast::Sender<Transaction>
 }
 
 #[derive(Serialize)]
@@ -88,7 +90,7 @@ async fn ws_handler(
 }
 
 async fn handle_socket(mut socket: WebSocket, state: AppState) {
-    let mut receiver = state.hub.subscribe();
+    let mut receiver = state.broadcaster.subscribe();
 
     loop {
         tokio::select! {
@@ -126,9 +128,13 @@ async fn main() {
                 .expect("Failed to connect to PostgreSQL");
     println!("Connected to PostgreSQL!");
 
-    let hub = Arc::new(StreamHub::new(1000));
+    let (broadcaster, _) = 
+        broadcast::channel::<Transaction>(1000);
 
-    let state = Arc::new(AppState { pool, hub });
+    let state = Arc::new(AppState { 
+        pool, 
+        broadcaster 
+    });
 
     let app = Router::new()
         .route("/health", get(health))
@@ -147,3 +153,19 @@ async fn main() {
         .await
         .unwrap();
 }
+// mod redis_sub;
+// #[tokio::main]
+// async fn main() -> Result<(), Box<dyn std::error::Error>>{
+//     dotenv().ok();
+//     let redis_url =
+//         std::env::var("REDIS_URL")
+//         .expect("REDIS URL is not found");
+
+//     let redis_client = 
+//         redis_sub::connect(&redis_url)
+//         .await?;
+
+//     redis_sub::subscribe_transactions(&redis_client).await?;
+
+//     Ok(())
+// }

@@ -136,6 +136,30 @@ async fn main() {
         broadcaster 
     });
 
+    let redis_url =
+         std::env::var("REDIS_URL")
+        .expect("REDIS_URL is not found");
+
+    let redis_client = 
+        redis_sub::connect(&redis_url)
+        .await
+        .expect("Failed to connect to Redis");
+
+    let redis_broadcaster = 
+        state.broadcaster.clone();
+
+    tokio::spawn(async move {
+        if let Err(err) = 
+            redis_sub::subscribe_transactions(
+                &redis_client, 
+                redis_broadcaster
+            )
+            .await
+        {
+            eprintln!("Redis subscriber error: {}", err);
+        }
+    });
+
     let app = Router::new()
         .route("/health", get(health))
         .route("/transactions", get(get_transactions))

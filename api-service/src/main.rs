@@ -182,19 +182,3 @@ async fn main() {
         .await
         .unwrap();
 }
-// mod redis_sub;
-// #[tokio::main]
-// async fn main() -> Result<(), Box<dyn std::error::Error>>{
-//     dotenv().ok();
-//     let redis_url =
-//         std::env::var("REDIS_URL")
-//         .expect("REDIS URL is not found");
-
-//     let redis_client = 
-//         redis_sub::connect(&redis_url)
-//         .await?;
-
-//     redis_sub::subscribe_transactions(&redis_client).await?;
-
-//     Ok(())
-// }

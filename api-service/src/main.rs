@@ -5,7 +5,7 @@ use shared::transaction::Transaction;
 use tokio::sync::broadcast;
 
 use dotenvy::dotenv;
-use sqlx::error;
+
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     response::IntoResponse,
@@ -84,12 +84,13 @@ async fn get_transaction_by_hash(
 
 async fn ws_handler(
     ws: WebSocketUpgrade,
-    axum::extract::State(state): axum::extract::State<AppState>
+    State(state): State<Arc<AppState>>
 ) -> impl IntoResponse {
     ws.on_upgrade(move |socket| handle_socket(socket, state))
 }
 
-async fn handle_socket(mut socket: WebSocket, state: AppState) {
+async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
+    println!("WebSocket client connected");
     let mut receiver = state.broadcaster.subscribe();
 
     loop {
@@ -97,6 +98,7 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
             msg = receiver.recv() => {
                 match msg {
                     Ok(tx) => {
+                        println!("Sending transaction {} to websocket", tx.hash);
                         let json = serde_json::to_string(&tx).unwrap();
 
                         if socket.send(Message::Text(json.into())).await.is_err() {
@@ -115,6 +117,8 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
             }
         }
     }
+
+    println!("WebSocket client disconnected");
 }
 
 #[tokio::main]
@@ -164,6 +168,7 @@ async fn main() {
         .route("/health", get(health))
         .route("/transactions", get(get_transactions))
         .route("/transaction/{hash}", get(get_transaction_by_hash))
+        .route("/ws", get(ws_handler))
         .with_state(state);
 
     let listener = 

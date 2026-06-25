@@ -1,5 +1,6 @@
 mod database;
 mod redis_sub;
+mod analytics;
 
 use shared::transaction::Transaction;
 use tokio::sync::broadcast;

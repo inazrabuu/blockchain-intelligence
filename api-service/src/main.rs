@@ -3,7 +3,8 @@ mod redis_sub;
 mod analytics;
 
 use shared::transaction::Transaction;
-use tokio::sync::broadcast;
+use std::sync::Arc;
+use tokio::sync::{broadcast, RwLock};
 
 use dotenvy::dotenv;
 
@@ -16,14 +17,19 @@ use axum::{
 };
 use serde::Serialize;
 use serde::Deserialize;
-use std::sync::Arc;
 use axum::extract::{Path, State, Query};
 use axum::http::StatusCode;
+
+use crate::analytics::{
+    AnalyticsState,
+    analytics_worker
+};
 
 #[derive(Clone)]
 struct AppState {
     pool: sqlx::PgPool,
-    broadcaster: broadcast::Sender<Transaction>
+    broadcaster: broadcast::Sender<Transaction>,
+    analytics: Arc<RwLock<AnalyticsState>>
 }
 
 #[derive(Serialize)]
@@ -136,9 +142,15 @@ async fn main() {
     let (broadcaster, _) = 
         broadcast::channel::<Transaction>(1000);
 
+    let analytics = Arc::new(
+        RwLock::new(AnalyticsState::default())
+    );
+    let analytics_rx = broadcaster.subscribe();
+
     let state = Arc::new(AppState { 
         pool, 
-        broadcaster 
+        broadcaster,
+        analytics: analytics.clone()
     });
 
     let redis_url =
@@ -163,6 +175,14 @@ async fn main() {
         {
             eprintln!("Redis subscriber error: {}", err);
         }
+    });
+
+    let analytics_state = analytics.clone();
+    tokio::spawn(async move {
+        analytics_worker(
+            analytics_rx,
+            analytics_state
+        ).await
     });
 
     let app = Router::new()

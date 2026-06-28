@@ -3,7 +3,7 @@ use shared::transaction::Transaction;
 use std::sync::Arc;
 use tokio::sync::{broadcast, RwLock};
 
-#[derive(Debug,Default)]
+#[derive(Debug,Default,Clone,serde::Serialize)]
 pub struct AnalyticsState {
     pub total_transaction: u64,
     pub total_volume: f64,

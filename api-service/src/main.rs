@@ -128,6 +128,17 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
     println!("WebSocket client disconnected");
 }
 
+async fn analytics_handler(
+    State(state): State<Arc<AppState>>
+) -> Json<AnalyticsState> {
+    let snapshot = {
+        let analytics = state.analytics.read().await;
+        analytics.clone()
+    };
+
+    Json(snapshot)
+}
+
 #[tokio::main]
 async fn main() {
     dotenv().ok();
@@ -190,6 +201,7 @@ async fn main() {
         .route("/transactions", get(get_transactions))
         .route("/transaction/{hash}", get(get_transaction_by_hash))
         .route("/ws", get(ws_handler))
+        .route("/analytics", get(analytics_handler))
         .with_state(state);
 
     let listener = 

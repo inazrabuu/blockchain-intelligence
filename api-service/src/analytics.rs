@@ -3,7 +3,15 @@ use shared::transaction::Transaction;
 use std::sync::Arc;
 use tokio::sync::{broadcast, RwLock};
 
-#[derive(Debug,Default,Clone,serde::Serialize)]
+#[derive(Debug,Clone,serde::Serialize)]
+pub struct AnalyticsSnapshot {
+    pub total_transaction: u64,
+    pub total_volume: f64,
+    pub largest_transaction: Option<Transaction>,
+    pub whale_transaction: u64
+}
+
+#[derive(Debug,Default,Clone)]
 pub struct AnalyticsState {
     pub total_transaction: u64,
     pub total_volume: f64,
@@ -28,6 +36,15 @@ impl AnalyticsState {
             _ => {
                 self.largest_transaction = Some(tx.clone());
             }
+        }
+    }
+
+    pub fn snapshot(&self) -> AnalyticsSnapshot {
+        AnalyticsSnapshot { 
+            total_transaction: self.total_transaction, 
+            total_volume: self.total_volume, 
+            largest_transaction: self.largest_transaction.clone(), 
+            whale_transaction: self.whale_transaction 
         }
     }
 }

@@ -22,6 +22,7 @@ use axum::http::StatusCode;
 
 use crate::analytics::{
     AnalyticsState,
+    AnalyticsSnapshot,
     analytics_worker
 };
 
@@ -130,10 +131,10 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
 
 async fn analytics_handler(
     State(state): State<Arc<AppState>>
-) -> Json<AnalyticsState> {
+) -> Json<AnalyticsSnapshot> {
     let snapshot = {
         let analytics = state.analytics.read().await;
-        analytics.clone()
+        analytics.snapshot()
     };
 
     Json(snapshot)

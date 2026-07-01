@@ -23,6 +23,12 @@ struct RollingTransaction {
     pub amount: f64
 }
 
+#[derive(Debug,Default)]
+pub struct AnalyticsMetrics {
+    pub processed_transactions: u64,
+    pub lagged_messages: u64
+}
+
 #[derive(Debug,Default,Clone)]
 pub struct AnalyticsState {
     pub total_transaction: u64,
@@ -100,6 +106,7 @@ pub async fn analytics_worker(
     analytics: Arc<RwLock<AnalyticsState>>
 ) {
     println!("Analytics worker started");
+    let mut metrics = AnalyticsMetrics::default();
 
     loop {
         match receiver.recv().await {
@@ -108,10 +115,13 @@ pub async fn analytics_worker(
 
                 state.process_transaction(&tx);
 
+                metrics.processed_transactions += 1;
+
                 println!("
-                    [Analytics] processed #{} | volume {:.2}", 
-                    state.total_transaction,
-                    state.total_volume
+                    [Analytics] processed #{} ; rolling={} ; whales={}", 
+                    metrics.processed_transactions,
+                    state.rolling_transaction_count,
+                    state.whale_transaction
                 );
             }
 
@@ -121,6 +131,7 @@ pub async fn analytics_worker(
             }
 
             Err(broadcast::error::RecvError::Lagged(skipped)) => {
+                metrics.lagged_messages += skipped as u64;
                 eprintln!(
                     "Analytics worker lagged behind. Skipped {} messages.",
                     skipped

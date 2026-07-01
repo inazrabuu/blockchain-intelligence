@@ -13,7 +13,8 @@ pub struct AnalyticsSnapshot {
     pub largest_transaction: Option<Transaction>,
     pub whale_transaction: u64,
     pub rolling_transaction_count: usize,
-    pub rolling_volume: f64
+    pub rolling_volume: f64,
+    pub rolling_tps: f64
 }
 
 #[derive(Debug,Clone)]
@@ -74,7 +75,8 @@ impl AnalyticsState {
             largest_transaction: self.largest_transaction.clone(), 
             whale_transaction: self.whale_transaction ,
             rolling_transaction_count: self.rolling_transaction_count,
-            rolling_volume: self.rolling_volume
+            rolling_volume: self.rolling_volume,
+            rolling_tps: self.rolling_transaction_count as f64 / ROLLING_WINDOW_SECONDS as f64
         }
     }
 

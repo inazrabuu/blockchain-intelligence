@@ -145,7 +145,7 @@ pub async fn analytics_worker(
                 let state = analytics.read().await;
 
                 println!(
-                    "[Analytics] processed #{} ; rolling={} ; tps={:.2} ; whales={} ; lagged={}", 
+                    "\n[Analytics] processed #{} ; rolling={} ; tps={:.2} ; whales={} ; lagged={}\n", 
                     metrics.processed_transactions,
                     state.rolling_transaction_count,
                     state.rolling_tps(),

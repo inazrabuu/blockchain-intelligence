@@ -10,8 +10,18 @@ use tokio::time::sleep;
 use tokio::sync::mpsc;
 use dotenvy::dotenv;
 
+use tracing::info;
+use tracing_subscriber::{fmt, EnvFilter};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>>{
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env()
+            .unwrap_or_else(|_| EnvFilter::new("info"))
+        )
+        .init();
+    info!("Starting Ingestion Service");
+
     dotenv().ok();
 
     let database_url = 
@@ -22,7 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
         database::connect(&database_url)
         .await
         .expect("Failed to connect to PostgreSQL");
-    println!("Database Postgre connected.");
+    info!("Database Postgre connected.");
 
     let redis_url = 
         std::env::var("REDIS_URL")
@@ -31,7 +41,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
     let redis_client = 
         redis_pub::connect(&redis_url)
         .await?;
-    println!("{}", "Redis connected");
+    info!("{}", "Redis connected");
 
     let (tx, mut rx) = 
         mpsc::channel::<Transaction>(100);

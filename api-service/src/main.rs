@@ -26,6 +26,9 @@ use crate::analytics::{
     analytics_worker
 };
 
+use tracing::info;
+use tracing_subscriber::{fmt, EnvFilter};
+
 #[derive(Clone)]
 struct AppState {
     pool: sqlx::PgPool,
@@ -142,6 +145,14 @@ async fn analytics_handler(
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env()
+            .unwrap_or_else(|_| EnvFilter::new("info"))
+        )
+        .init();
+    info!("Starting API Service");
+
     dotenv().ok();
 
     let database_url = std::env::var("DATABASE_URL")
@@ -149,7 +160,7 @@ async fn main() {
     let pool = database::connect(&database_url)
                 .await
                 .expect("Failed to connect to PostgreSQL");
-    println!("Connected to PostgreSQL!");
+    info!("Connected to PostgreSQL!");
 
     let (broadcaster, _) = 
         broadcast::channel::<Transaction>(1000);

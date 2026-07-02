@@ -144,8 +144,8 @@ pub async fn analytics_worker(
             _ = report_interval.tick() => {
                 let state = analytics.read().await;
 
-                println!("
-                    [Analytics] processed #{} ; rolling={} ; tps={:.2} ; whales={} ; lagged={}", 
+                println!(
+                    "[Analytics] processed #{} ; rolling={} ; tps={:.2} ; whales={} ; lagged={}", 
                     metrics.processed_transactions,
                     state.rolling_transaction_count,
                     state.rolling_tps(),

@@ -2,6 +2,7 @@ use shared::transaction::Transaction;
 
 use std::sync::Arc;
 use tokio::sync::{broadcast, RwLock};
+use tokio::time::{interval, Duration};
 use std::collections::VecDeque;
 
 const ROLLING_WINDOW_SECONDS: i64 = 60;
@@ -18,7 +19,7 @@ pub struct AnalyticsSnapshot {
 }
 
 #[derive(Debug,Clone)]
-struct RollingTransaction {
+pub struct RollingTransaction {
     pub timestamp: i64,
     pub amount: f64
 }
@@ -41,6 +42,10 @@ pub struct AnalyticsState {
 }
 
 impl AnalyticsState {
+    pub fn rolling_tps(&self) -> f64 {
+        self.rolling_transaction_count as f64 / ROLLING_WINDOW_SECONDS as f64
+    }
+
     pub fn process_transaction(
       &mut self,
       tx: &Transaction
@@ -82,7 +87,7 @@ impl AnalyticsState {
             whale_transaction: self.whale_transaction ,
             rolling_transaction_count: self.rolling_transaction_count,
             rolling_volume: self.rolling_volume,
-            rolling_tps: self.rolling_transaction_count as f64 / ROLLING_WINDOW_SECONDS as f64
+            rolling_tps: self.rolling_tps()
         }
     }
 
@@ -107,34 +112,45 @@ pub async fn analytics_worker(
 ) {
     println!("Analytics worker started");
     let mut metrics = AnalyticsMetrics::default();
+    let mut report_interval = interval(Duration::from_secs(5));
 
     loop {
-        match receiver.recv().await {
-            Ok(tx) => {
-                let mut state = analytics.write().await;
+        tokio::select! {
+            result = receiver.recv() => {
+                match result {
+                    Ok(tx) => {
+                        let mut state = analytics.write().await;
 
-                state.process_transaction(&tx);
+                        state.process_transaction(&tx);
 
-                metrics.processed_transactions += 1;
+                        metrics.processed_transactions += 1;
+                    }
+
+                    Err(broadcast::error::RecvError::Closed) => {
+                        println!("Analytics worker stopped.");
+                        break;
+                    }
+
+                    Err(broadcast::error::RecvError::Lagged(skipped)) => {
+                        metrics.lagged_messages += skipped as u64;
+                        eprintln!(
+                            "Analytics worker lagged behind. Skipped {} messages.",
+                            skipped
+                        );
+                    }
+                }
+            }
+
+            _ = report_interval.tick() => {
+                let state = analytics.read().await;
 
                 println!("
-                    [Analytics] processed #{} ; rolling={} ; whales={}", 
+                    [Analytics] processed #{} ; rolling={} ; tps={:.2} ; whales={} ; lagged={}", 
                     metrics.processed_transactions,
                     state.rolling_transaction_count,
-                    state.whale_transaction
-                );
-            }
-
-            Err(broadcast::error::RecvError::Closed) => {
-                println!("Analytics worker stopped.");
-                break;
-            }
-
-            Err(broadcast::error::RecvError::Lagged(skipped)) => {
-                metrics.lagged_messages += skipped as u64;
-                eprintln!(
-                    "Analytics worker lagged behind. Skipped {} messages.",
-                    skipped
+                    state.rolling_tps(),
+                    state.whale_transaction,
+                    metrics.lagged_messages
                 );
             }
         }

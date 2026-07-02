@@ -1,6 +1,6 @@
-use redis::{AsyncCommands, RedisResult};
+use redis;
 use futures_util::StreamExt;
-use shared::transaction::{self, Transaction};
+use shared::transaction::Transaction;
 use tokio::sync::broadcast;
 
 pub async fn connect(

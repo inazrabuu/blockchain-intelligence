@@ -1,6 +1,6 @@
 use shared::transaction::Transaction;
 use sqlx::{PgPool, postgres::PgPoolOptions};
-use tracing::instrument;
+use tracing::{info,instrument};
 
 pub async fn connect(database_url: &str) -> Result<PgPool, sqlx::Error> {
     PgPoolOptions::new()
@@ -10,7 +10,11 @@ pub async fn connect(database_url: &str) -> Result<PgPool, sqlx::Error> {
 }
 
 #[instrument(
-    skip(pool, transaction)
+    skip(pool, transaction),
+    fields(
+      hash = %transaction.hash,
+      amount = %transaction.amount
+    )
 )]
 pub async fn insert_transaction(
   pool: &PgPool,
@@ -34,6 +38,7 @@ pub async fn insert_transaction(
   .bind(&transaction.timestamp)
   .execute(pool)
   .await?;
+  info!("Transaction persisted!");
 
   Ok(())
 }

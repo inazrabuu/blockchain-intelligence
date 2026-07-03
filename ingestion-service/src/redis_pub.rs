@@ -1,5 +1,5 @@
 use redis::AsyncCommands;
-use tracing::instrument;
+use tracing::{info, instrument};
 
 pub async fn connect(
   url: &str
@@ -8,7 +8,10 @@ pub async fn connect(
 }
 
 #[instrument(
-    skip(client, payload)
+    skip(client, payload),
+    fields(
+        payload = %payload
+    )
 )]
 pub async fn publish_transaction(
   client: &redis::Client,
@@ -19,6 +22,7 @@ pub async fn publish_transaction(
     let _: () = conn
         .publish("transaction_events", payload)
         .await?;
+    info!("Transaction published!");
 
     Ok(())
 }

@@ -55,7 +55,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
 
         loop {
             let trx = generator.generate();
-            println!("Producing {}", trx.hash);            
+            info!(
+                hash = trx.hash,
+                "Producing "
+            );            
             tx.send(trx).await.unwrap();
         }
     });
@@ -64,8 +67,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
     let consumer = tokio::spawn(async move {
         // consumer
         while let Some(transaction) = rx.recv().await {
-            println!("Consuming {}", transaction.hash);
-            println!("{}", transaction.summary());
+            info!(
+                hash = transaction.hash,
+                "Consuming transaction"
+            );
+            info!(
+                summary = transaction.summary()
+            );
 
             if let Err(err) = database::insert_transaction(&pool, &transaction).await {
                 eprintln!("Insert failed: {}", err);
@@ -78,10 +86,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
             if let Err(err) = redis_pub::publish_transaction(&consumer_redis, &payload).await {
                 eprintln!("Redis publish failed {}", err);
             }
-            println!("published {} to Redis", transaction.hash);
+            info!(
+                hash = transaction.hash,
+                "published transaction to Redis"
+            );
 
             consumer_hub.publish(transaction.clone());
-            println!("Published to stream: {}", transaction.hash);
+            info!(
+                hash = transaction.hash,
+                "Published to stream:"
+            );
 
             sleep(Duration::from_secs(1)).await;
         }

@@ -221,7 +221,10 @@ async fn main() {
             .await
             .unwrap();
 
-    println!("API listening on port 3000");
+    info!(
+        address = "0.0.0.0:3000",
+        "API server started"
+    );
 
     axum::serve(listener, app)
         .await

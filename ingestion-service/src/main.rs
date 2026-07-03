@@ -10,7 +10,7 @@ use tokio::time::sleep;
 use tokio::sync::mpsc;
 use dotenvy::dotenv;
 
-use tracing::info;
+use tracing::{info,error};
 use tracing_subscriber::{fmt, EnvFilter};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>>{
@@ -41,7 +41,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
     let redis_client = 
         redis_pub::connect(&redis_url)
         .await?;
-    info!("{}", "Redis connected");
+    info!("Redis connected");
 
     let (tx, mut rx) = 
         mpsc::channel::<Transaction>(100);
@@ -56,7 +56,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
         loop {
             let trx = generator.generate();
             info!(
-                hash = trx.hash,
+                hash = %trx.hash,
                 "Producing "
             );            
             tx.send(trx).await.unwrap();
@@ -68,15 +68,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
         // consumer
         while let Some(transaction) = rx.recv().await {
             info!(
-                hash = transaction.hash,
+                hash = %transaction.hash,
                 "Consuming transaction"
             );
             info!(
-                summary = transaction.summary()
+                summary = %transaction.summary()
             );
 
             if let Err(err) = database::insert_transaction(&pool, &transaction).await {
-                eprintln!("Insert failed: {}", err);
+                error!(
+                    error = %err,
+                    "Insert failed"
+                );
                 continue;
             }
 
@@ -84,16 +87,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
                 .expect("serialize transaction");
 
             if let Err(err) = redis_pub::publish_transaction(&consumer_redis, &payload).await {
-                eprintln!("Redis publish failed {}", err);
+                error!(
+                    error = %err,
+                    "Redis publish failed"
+                );
             }
             info!(
-                hash = transaction.hash,
+                hash = %transaction.hash,
                 "published transaction to Redis"
             );
 
             consumer_hub.publish(transaction.clone());
             info!(
-                hash = transaction.hash,
+                hash = %transaction.hash,
                 "Published to stream:"
             );
 

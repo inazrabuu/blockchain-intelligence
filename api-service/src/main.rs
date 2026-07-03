@@ -101,7 +101,7 @@ async fn ws_handler(
 }
 
 async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
-    println!("WebSocket client connected");
+    info!("WebSocket client connected");
     let mut receiver = state.broadcaster.subscribe();
 
     loop {
@@ -129,7 +129,7 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
         }
     }
 
-    println!("WebSocket client disconnected");
+    info!("WebSocket client disconnected");
 }
 
 async fn analytics_handler(
@@ -145,7 +145,7 @@ async fn analytics_handler(
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt()
+    fmt()
         .with_env_filter(
             EnvFilter::try_from_default_env()
             .unwrap_or_else(|_| EnvFilter::new("info"))

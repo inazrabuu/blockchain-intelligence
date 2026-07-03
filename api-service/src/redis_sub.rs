@@ -2,6 +2,7 @@ use redis;
 use futures_util::StreamExt;
 use shared::transaction::Transaction;
 use tokio::sync::broadcast;
+use tracing::info;
 
 pub async fn connect(
     url: &str
@@ -20,7 +21,7 @@ pub async fn subscribe_transactions(
     pubsub
         .subscribe("transaction_events")
         .await?;
-    println!("{}", "Subscribed to tranasction_events");
+    info!("{}", "Subscribed to tranasction_events");
 
     let mut stream = pubsub.on_message();
 
@@ -31,7 +32,10 @@ pub async fn subscribe_transactions(
             serde_json::from_str(&payload)
             .expect("Failed to deserialize transaction");
 
-        println!("Broadcasting transaction {}", transaction.hash);
+        info!(
+            hash = transaction.hash,
+            "Broadcasting transaction"
+        );
         let _ = broadcaster.send(transaction);
     }
 

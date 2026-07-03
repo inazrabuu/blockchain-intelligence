@@ -4,6 +4,7 @@ use std::sync::Arc;
 use tokio::sync::{broadcast, RwLock};
 use tokio::time::{interval, Duration};
 use std::collections::VecDeque;
+use tracing::info;
 
 const ROLLING_WINDOW_SECONDS: i64 = 60;
 
@@ -110,7 +111,7 @@ pub async fn analytics_worker(
     mut receiver: broadcast::Receiver<Transaction>,
     analytics: Arc<RwLock<AnalyticsState>>
 ) {
-    println!("Analytics worker started");
+    info!("Analytics worker started");
     let mut metrics = AnalyticsMetrics::default();
     let mut report_interval = interval(Duration::from_secs(5));
 
@@ -127,7 +128,7 @@ pub async fn analytics_worker(
                     }
 
                     Err(broadcast::error::RecvError::Closed) => {
-                        println!("Analytics worker stopped.");
+                        info!("Analytics worker stopped.");
                         break;
                     }
 
@@ -144,14 +145,14 @@ pub async fn analytics_worker(
             _ = report_interval.tick() => {
                 let state = analytics.read().await;
 
-                println!(
-                    "\n[Analytics] processed #{} ; rolling={} ; tps={:.2} ; whales={} ; lagged={}\n", 
-                    metrics.processed_transactions,
-                    state.rolling_transaction_count,
-                    state.rolling_tps(),
-                    state.whale_transaction,
-                    metrics.lagged_messages
-                );
+                info!(
+                    processed = metrics.processed_transactions,
+                    rolling = state.rolling_transaction_count,
+                    tps = state.rolling_tps(),
+                    whales = state.whale_transaction,
+                    lagged = metrics.lagged_messages,
+                    "\n[Analytics] processed "
+                )
             }
         }
     }

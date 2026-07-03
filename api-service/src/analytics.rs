@@ -4,7 +4,7 @@ use std::sync::Arc;
 use tokio::sync::{broadcast, RwLock};
 use tokio::time::{interval, Duration};
 use std::collections::VecDeque;
-use tracing::info;
+use tracing::{info, error};
 
 const ROLLING_WINDOW_SECONDS: i64 = 60;
 
@@ -134,9 +134,10 @@ pub async fn analytics_worker(
 
                     Err(broadcast::error::RecvError::Lagged(skipped)) => {
                         metrics.lagged_messages += skipped as u64;
-                        eprintln!(
-                            "Analytics worker lagged behind. Skipped {} messages.",
-                            skipped
+                        error!(
+                            skipped = %skipped,
+                            "Analytics worker lagged behind. Messages skipped."
+                            
                         );
                     }
                 }

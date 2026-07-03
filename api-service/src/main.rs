@@ -26,7 +26,7 @@ use crate::analytics::{
     analytics_worker
 };
 
-use tracing::info;
+use tracing::{info, error};
 use tracing_subscriber::{fmt, EnvFilter};
 
 #[derive(Clone)]
@@ -109,7 +109,10 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
             msg = receiver.recv() => {
                 match msg {
                     Ok(tx) => {
-                        println!("Sending transaction {} to websocket", tx.hash);
+                        info!(
+                            hash = %tx.hash,
+                            "Sending transaction to websocket"
+                        );
                         let json = serde_json::to_string(&tx).unwrap();
 
                         if socket.send(Message::Text(json.into())).await.is_err() {
@@ -196,7 +199,10 @@ async fn main() {
             )
             .await
         {
-            eprintln!("Redis subscriber error: {}", err);
+            error!(
+                error = %err,
+                "Redis subscriber error"
+            );
         }
     });
 

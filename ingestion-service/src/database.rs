@@ -1,5 +1,6 @@
 use shared::transaction::Transaction;
 use sqlx::{PgPool, postgres::PgPoolOptions};
+use tracing::instrument;
 
 pub async fn connect(database_url: &str) -> Result<PgPool, sqlx::Error> {
     PgPoolOptions::new()
@@ -8,6 +9,9 @@ pub async fn connect(database_url: &str) -> Result<PgPool, sqlx::Error> {
       .await
 }
 
+#[instrument(
+    skip(pool, transaction)
+)]
 pub async fn insert_transaction(
   pool: &PgPool,
   transaction: &Transaction,

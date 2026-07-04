@@ -11,4 +11,6 @@ redis = { version= "0.32", features = ["tokio-comp"] }
 serde_json = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+metrics = "0.24"
+metrics-exporter-prometheus = "0.17"
 shared = { path = "../shared" }

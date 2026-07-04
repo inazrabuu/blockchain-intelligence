@@ -1,6 +1,7 @@
 mod generator;
 mod database;
 mod redis_pub;
+mod metrics;
 
 use shared::transaction::Transaction;
 use shared::stream::StreamHub;
@@ -14,6 +15,7 @@ use dotenvy::dotenv;
 use tracing::{info,error};
 use tracing_subscriber::{fmt, EnvFilter};
 use metrics_exporter_prometheus::{PrometheusBuilder,PrometheusHandle};
+use crate::metrics::{record_transaction_processed};
 
 #[derive(Clone)]
 struct AppState {
@@ -103,6 +105,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
                 );
                 continue;
             }
+            record_transaction_processed();
+
 
             let payload = serde_json::to_string(&transaction)
                 .expect("serialize transaction");
@@ -127,10 +131,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
             sleep(Duration::from_secs(1)).await;
         }
     });
-
-    use metrics::counter;
-
-    counter!("test_counter").increment(1);
 
     let app = Router::new()
         .route("/metrics", get(metrics_handler))

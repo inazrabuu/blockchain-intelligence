@@ -8,10 +8,28 @@ use generator::Generator;
 use std::time::Duration;
 use tokio::time::sleep;
 use tokio::sync::mpsc;
+use tokio::net::TcpListener;
 use dotenvy::dotenv;
 
 use tracing::{info,error};
 use tracing_subscriber::{fmt, EnvFilter};
+use metrics_exporter_prometheus::{PrometheusBuilder,PrometheusHandle};
+
+#[derive(Clone)]
+struct AppState {
+    prometheus: PrometheusHandle
+}
+
+use axum::{
+    extract::State, response::IntoResponse, routing::get, Router
+};
+
+async fn metrics_handler(
+    State(state): State<AppState>
+) -> impl IntoResponse {
+    state.prometheus.render()
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>>{
     fmt()
@@ -21,6 +39,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
         )
         .init();
     info!("Starting Ingestion Service");
+
+    let prometheus_handle = PrometheusBuilder::new()
+        .install_recorder()?;
 
     dotenv().ok();
 
@@ -107,7 +128,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
         }
     });
 
-    let _ = tokio::join!(producer, consumer);
+    use metrics::counter;
+
+    counter!("test_counter").increment(1);
+
+    let app = Router::new()
+        .route("/metrics", get(metrics_handler))
+        .with_state(AppState {
+            prometheus: prometheus_handle.clone()
+        });
+    
+    let metrics_server = tokio::spawn(async move {
+        let listener = TcpListener::bind("0.0.0.0:8001")
+            .await
+            .unwrap();
+
+        info!(
+            address = "0.0.0.0:8001",
+            "API metrics started"
+        );
+
+        axum::serve(listener, app)
+            .await
+            .unwrap();
+    });
+
+    let _ = tokio::join!(producer, consumer, metrics_server);
 
     Ok(())
 }

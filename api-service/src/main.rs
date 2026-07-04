@@ -28,6 +28,7 @@ use crate::analytics::{
 
 use tracing::{info, error};
 use tracing_subscriber::{fmt, EnvFilter};
+use metrics_exporter_prometheus::PrometheusBuilder;
 
 #[derive(Clone)]
 struct AppState {
@@ -155,6 +156,9 @@ async fn main() {
         )
         .init();
     info!("Starting API Service");
+
+    let prometheus_handle = PrometheusBuilder::new()
+        .install_recorder();
 
     dotenv().ok();
 

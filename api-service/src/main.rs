@@ -12,7 +12,7 @@ use dotenvy::dotenv;
 
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
-    response::IntoResponse,
+    response::{Response, IntoResponse},
     routing::get,
     Json,
     Router
@@ -149,6 +149,15 @@ async fn analytics_handler(
     Json(snapshot)
 }
 
+async fn metrics_handler(
+    State(prometheus): State<Arc<metrics_exporter_prometheus::PrometheusHandle>>
+) -> Response {
+    Response::builder()
+        .header("Content-Type", "text/plain; version=0.0.4")
+        .body(prometheus.render().into())
+        .unwrap()
+}
+
 #[tokio::main]
 async fn main() {
     fmt()
@@ -160,7 +169,8 @@ async fn main() {
     info!("Starting API Service");
 
     let prometheus_handle = PrometheusBuilder::new()
-        .install_recorder();
+        .install_recorder()
+        .expect("failed to install Prometheus recorder");
 
     dotenv().ok();
 
@@ -220,7 +230,7 @@ async fn main() {
         ).await
     });
 
-    let app = Router::new()
+    let api_router = Router::new()
         .route("/health", get(health))
         .route("/transactions", get(get_transactions))
         .route("/transaction/{hash}", get(get_transaction_by_hash))
@@ -230,6 +240,13 @@ async fn main() {
         .layer(
             axum::middleware::from_fn(middleware::metrics_middleware)
         );
+
+    let prometheus = Arc::new(prometheus_handle);
+    let metrics_router = Router::new()
+        .route("/metrics", get(metrics_handler))
+        .with_state(prometheus);
+
+    let app = api_router.merge(metrics_router);
 
     let listener = 
         tokio::net::TcpListener::bind("0.0.0.0:3000")

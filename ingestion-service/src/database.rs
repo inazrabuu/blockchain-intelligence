@@ -1,6 +1,7 @@
 use shared::transaction::Transaction;
 use sqlx::{PgPool, postgres::PgPoolOptions};
 use tracing::{info,instrument};
+use crate::metrics::HistogramTimer;
 
 pub async fn connect(database_url: &str) -> Result<PgPool, sqlx::Error> {
     PgPoolOptions::new()
@@ -20,7 +21,9 @@ pub async fn insert_transaction(
   pool: &PgPool,
   transaction: &Transaction,
 ) -> Result<(), sqlx::Error> {
-  sqlx::query(
+  let timer = HistogramTimer::start("blockchain_db_insert_duration_seconds");
+
+  let result = sqlx::query(
     r#"
     INSERT INTO transactions (
       hash,
@@ -37,7 +40,11 @@ pub async fn insert_transaction(
   .bind(&transaction.amount)
   .bind(&transaction.timestamp)
   .execute(pool)
-  .await?;
+  .await;
+
+  if result.is_ok() {
+      timer.observe();
+  }
   info!("Transaction persisted!");
 
   Ok(())

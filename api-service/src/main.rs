@@ -1,6 +1,8 @@
 mod database;
 mod redis_sub;
 mod analytics;
+mod middleware;
+mod metrics;
 
 use shared::transaction::Transaction;
 use std::sync::Arc;
@@ -224,7 +226,10 @@ async fn main() {
         .route("/transaction/{hash}", get(get_transaction_by_hash))
         .route("/ws", get(ws_handler))
         .route("/analytics", get(analytics_handler))
-        .with_state(state);
+        .with_state(state)
+        .layer(
+            axum::middleware::from_fn(middleware::metrics_middleware)
+        );
 
     let listener = 
         tokio::net::TcpListener::bind("0.0.0.0:3000")

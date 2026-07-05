@@ -3,7 +3,7 @@ use axum::{
   middleware::Next,
   response::Response
 };
-use crate::metrics;
+use crate::metrics::{record_http_request, record_http_duration};
 use std::time::Instant;
 
 pub async fn metrics_middleware(
@@ -14,7 +14,8 @@ pub async fn metrics_middleware(
 
     let response = next.run(req).await;
 
-    //implement counter
-
+    record_http_request();
+    record_http_duration(start.elapsed().as_secs_f64());
+    
     response
 }

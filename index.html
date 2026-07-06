@@ -23,16 +23,15 @@
       const ws = new WebSocket("ws://localhost:3000/ws");
 
       ws.onopen = () => {
-        console.log("connected");
+        document.getElementById("container").innerHTML += "<h1>Connected</h1>";
       };
 
       ws.onmessage = (event) => {
-        let container = document.getElementById("container");
-        container.innerHTML += event.data + "<br />";
+        document.getElementById("container").innerHTML += event.data + "<br />";
       };
 
       ws.onclose = () => {
-        console.log("closed");
+        document.getElementById("container").innerHTML += "closed<br />";
       };
     </script>
     <script src="" async defer></script>

@@ -31,6 +31,11 @@ use crate::analytics::{
 use tracing::{info, error};
 use tracing_subscriber::{fmt, EnvFilter};
 use metrics_exporter_prometheus::PrometheusBuilder;
+use crate::metrics::{
+    record_ws_client_connected,
+    record_ws_message_sent,
+    record_ws_client_disconnected
+};
 
 #[derive(Clone)]
 struct AppState {
@@ -105,6 +110,7 @@ async fn ws_handler(
 
 async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
     info!("WebSocket client connected");
+    record_ws_client_connected();
     let mut receiver = state.broadcaster.subscribe();
 
     loop {
@@ -121,6 +127,7 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
                         if socket.send(Message::Text(json.into())).await.is_err() {
                             break;
                         }
+                        record_ws_message_sent();
                     }
                     Err(_) => break,
                 }
@@ -136,6 +143,7 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
     }
 
     info!("WebSocket client disconnected");
+    record_ws_client_disconnected();
 }
 
 async fn analytics_handler(

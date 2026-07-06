@@ -27,11 +27,8 @@
       };
 
       ws.onmessage = (event) => {
-        // console.log(JSON.parse(event.data));
-        let container = document.getElementById("container"),
-          content = container.innerHTML;
-        content += event.data + "<br />";
-        container.innerHTML = content;
+        let container = document.getElementById("container");
+        container.innerHTML += event.data + "<br />";
       };
 
       ws.onclose = () => {

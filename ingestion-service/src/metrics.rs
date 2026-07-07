@@ -5,6 +5,14 @@ pub fn record_transaction_processed() {
     counter!("blockchain_transaction_processed_total").increment(1);
 }
 
+pub fn record_redis_publish() {
+    counter!("blockchain_redis_publish_total").increment(1);
+}
+
+pub fn record_redis_publish_failure() {
+    counter!("blockchain_redis_publish_failures_total").increment(1);
+}
+
 pub struct HistogramTimer {
     start: Instant,
     metric_name: &'static str

@@ -1,5 +1,10 @@
 use redis::AsyncCommands;
-use tracing::{info, instrument};
+use tracing::{info, instrument, warn, error};
+use crate::metrics::{
+    record_redis_publish, 
+    record_redis_publish_failure,
+    HistogramTimer
+};
 
 pub async fn connect(
   url: &str
@@ -17,12 +22,24 @@ pub async fn publish_transaction(
   client: &redis::Client,
   payload: &str
 ) -> redis::RedisResult<()> {
+    let timer = HistogramTimer::start("blockchain_redis_publish_duration_seconds");
     let mut conn = client.get_multiplexed_async_connection().await?;
 
-    let _: () = conn
-        .publish("transaction_events", payload)
-        .await?;
-    info!("Transaction published!");
+    match conn
+        .publish::<_, _, i64>("transaction_events", payload)
+        .await
+    {
+        Ok(subscribers) => {
+            info!(subscribers, "Transaction published");
+            record_redis_publish();
+            timer.observe();
+            Ok(())
+        }
 
-    Ok(())
+        Err(err) => {
+            error!(error = %err, "Failed to publish transaction");
+            record_redis_publish_failure();
+            Err(err)
+        }
+    }
 }

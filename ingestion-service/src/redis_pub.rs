@@ -1,5 +1,5 @@
 use redis::AsyncCommands;
-use tracing::{info, instrument, warn, error};
+use tracing::{info, instrument, error};
 use crate::metrics::{
     record_redis_publish, 
     record_redis_publish_failure,

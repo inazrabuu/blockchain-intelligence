@@ -23,7 +23,7 @@ pub async fn insert_transaction(
 ) -> Result<(), sqlx::Error> {
   let timer = HistogramTimer::start("blockchain_db_insert_duration_seconds");
 
-  let result = sqlx::query(
+  sqlx::query(
     r#"
     INSERT INTO transactions (
       hash,
@@ -40,11 +40,12 @@ pub async fn insert_transaction(
   .bind(&transaction.amount)
   .bind(&transaction.timestamp)
   .execute(pool)
-  .await;
+  .await?;
 
-  if result.is_ok() {
-      timer.observe();
-  }
+  // if result.is_ok() {
+  //     timer.observe();
+  // }
+  timer.observe();
   info!("Transaction persisted!");
 
   Ok(())

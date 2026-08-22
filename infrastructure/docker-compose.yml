@@ -20,5 +20,33 @@ services:
     ports:
       - "6379:6379"
 
+  ingestion-service:
+    build:
+      context: ..
+      dockerfile: Dockerfile.ingestion
+    container_name: blockchain-ingestion
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/blockchain
+      REDIS_URL: redis://redis:6379
+      RUST_LOG: info
+    depends_on:
+      - postgres
+      - redis
+
+  api-service:
+    build:
+      context: ..
+      dockerfile: Dockerfile.api
+    container_name: blockchain-api
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/blockchain
+      REDIS_URL: redis://redis:6379
+      RUST_LOG: info
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "3000:3000"
+
 volumes:
   postgres_data:

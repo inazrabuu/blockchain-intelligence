@@ -15,3 +15,5 @@ metrics = "0.24"
 metrics-exporter-prometheus = "0.17"
 axum = "0.8"
 shared = { path = "../shared" }
+alloy = { version = "1", features = ["providers", "provider-ws", "rpc-types"] }
+futures-util = "0.3"

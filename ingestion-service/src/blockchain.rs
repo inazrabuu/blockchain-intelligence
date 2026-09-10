@@ -1,5 +1,6 @@
 use alloy::providers::{Provider, ProviderBuilder, WsConnect};
 use alloy::network::TransactionResponse;
+use alloy::consensus::Transaction;
 use futures_util::StreamExt;
 
 pub async fn subscribe_blocks(
@@ -51,11 +52,16 @@ pub async fn subscribe_blocks(
                 );
 
                 for transaction in transactions {
+                    let hash = transaction.tx_hash();
+                    let from = transaction.from();
+                    let to = transaction.to();
+                    let value = transaction.value();
 
-                    println!(
-                        "  TX: {:?}",
-                        transaction.tx_hash()
-                    );
+                    println!(" \nTX:");
+                    println!("  Hash:  {:?}", hash);
+                    println!("  From:  {:?}", from);
+                    println!("  To:    {:?}", to);
+                    println!("  Value: {} wei", value);
                 }
             } else {
               println!("Block does not contain full transactions");

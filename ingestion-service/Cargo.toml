@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 tokio = {version = "1", features = ["full"] }
 dotenvy = "0.15.7"
-sqlx = { version = "0.8", features = ["postgres", "runtime-tokio-rustls"] }
+sqlx = { version = "0.8", features = ["postgres", "runtime-tokio-rustls", "migrate"] }
 redis = { version= "0.32", features = ["tokio-comp"] }
 serde_json = "1"
 tracing = "0.1"

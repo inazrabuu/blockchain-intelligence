@@ -1,13 +1,12 @@
-mod generator;
+mod blockchain;
 mod database;
 mod redis_pub;
 mod metrics;
 
 use shared::transaction::Transaction;
 use shared::stream::StreamHub;
-use generator::Generator;
-use std::time::Duration;
-use tokio::time::sleep;
+// use std::time::Duration;
+// use tokio::time::sleep;
 use tokio::sync::mpsc;
 use tokio::net::TcpListener;
 use dotenvy::dotenv;
@@ -57,6 +56,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
         .expect("Failed to connect to PostgreSQL");
     info!("Database Postgre connected.");
 
+    database::migrate(&pool)
+        .await
+        .expect("Failed to run database migration");
+    info!("Database migration completed.");
+
     let redis_url = 
         std::env::var("REDIS_URL")
         .expect("REDIS_URL is not found");
@@ -72,17 +76,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
     let hub = StreamHub::new(1000);
     let consumer_hub = hub.clone();
 
+    
     let producer = tokio::spawn(async move {
-        // producer
-        let mut generator = Generator::new();
+        let ws_url = 
+            std::env::var("ETH_WS_URL")
+            .expect("ETH_WS_URL is not found");
+        let http_url = 
+            std::env::var("ETH_HTTP_URL")
+            .expect("ETH_HTTP_URL is not found");
 
-        loop {
-            let trx = generator.generate();
-            info!(
-                hash = %trx.hash,
-                "Producing "
-            );            
-            tx.send(trx).await.unwrap();
+        if let Err(err) = 
+            blockchain::subscribe_blocks(&ws_url, &http_url, tx).await 
+        {
+            error!(
+                error = %err,
+                "Blockchain subscription stopped"
+            );
         }
     });
 
@@ -128,7 +137,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
                 "Published to stream:"
             );
 
-            sleep(Duration::from_secs(1)).await;
+            // sleep(Duration::from_secs(1)).await;
         }
     });
 
